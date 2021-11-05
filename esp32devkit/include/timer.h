@@ -1,7 +1,11 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-long encTick(byte pin);
-void encoderCallback();
+void encoderCallbackL();
+void encoderCallbackR();
+void timerSetup();
+void timerLoop();
+
+extern volatile long encCounter[2];
 
 #endif /* __TIMER_H__ */

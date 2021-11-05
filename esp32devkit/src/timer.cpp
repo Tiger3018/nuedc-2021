@@ -1,27 +1,44 @@
-#include "main.h"
+#include "gpio.h"
 #include "timer.h"
+#include <Arduino.h>
 #include <AccelMotor.h>
 
-static long encCounter[2] = {0};
+volatile long encCounter[2] = {0};
 
-long encTick(byte pin) {
-  static bool lastState;
-  static long encCounter = 0;
-  bool curState = digitalRead(pin);       // опрос
-  if (lastState != curState) {            // словили изменение
-    lastState = curState;
-    if (curState) {                       // по фронту
-    //   encCounter += motor.getState();     // запомнили поворот
+static unsigned long regTimer;
+
+void encoderCallbackL() {
+    if(digitalRead(MOTOR_LIN1_PIN) != digitalRead(MOTOR_LIN2_PIN))
+    {
+        ++ encCounter[0];
     }
-  }
-  return encCounter;
+    else
+    {
+        -- encCounter[0];
+    }
 }
 
-void encoderRead() {
-    motorLeft.tick(encCounter[0]);
-    motorRight.tick(encCounter[1]);
+void encoderCallbackR() {
+    if(digitalRead(MOTOR_RIN1_PIN) != digitalRead(MOTOR_RIN2_PIN))
+    {
+        ++ encCounter[1];
+    }
+    else
+    {
+        -- encCounter[1];
+    }
 }
 
-void encoderCallback() {
-    Serial.printf("got it!");
+void timerSetup()
+{
+    regTimer = millis();
+}
+
+void timerLoop()
+{
+    if(millis() - regTimer > 1000)
+    {
+        regTimer = millis();
+        Serial.printf("Counter: %ld %ld\n", encCounter[0], encCounter[1]);
+    }
 }

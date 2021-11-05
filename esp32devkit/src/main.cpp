@@ -1,39 +1,33 @@
 #include "main.h"
-#include "bt.h"
+#include "ble.h"
 #include "timer.h"
 #include "motor.h"
 // #include <Servo.h>
 // #include <analogWrite.h>
-#include <BluetoothSerial.h>
+// #include <BluetoothSerial.h>
 
+Preferences pref;
+
+void(* resetFunc) (void) = 0x0; //declare reset function at address 0, trigger watchdog.
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
   motorSetup();
+  pref.begin("default");
+  bleSetup();
 
-
-  SerialBT.enableSSP();
-  SerialBT.onConfirmRequest(BTConfirmRequestCallback);
-  SerialBT.onAuthComplete(BTAuthCompleteCallback);
-  // SerialBT.begin("ESP32test"); //Bluetooth device name
-  Serial.println("The device started, now you can pair it with bluetooth!");
-  // motorRight.setRunMode(IDLE_RUN);
+  timerSetup();
   log_i("setup complete! (Task: loopTask)");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   digitalWrite(LED_PIN, HIGH);
-  // delay(1000);//millis();
-  // motorLeft.tick(encTick(MOTOR_LIN1_PIN));
-  // Serial.printf("now statistics: %ld %d\n", motorLeft.getCurrent(), motorLeft.getSpeed());
-  // digitalWrite(LED_PIN, LOW);
-  // delay(1000);//millis();
-  // delay(1000);
-  // Serial.println(motorLeft.getCurrent(), motorLeft.getSpeed());
-  // motorLeft.tick()
+  bleLoop();
+  timerLoop();
+  motorLoop();
 }
 
 void serialEventRun() {

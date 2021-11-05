@@ -2,10 +2,13 @@
 #define __MAIN_H__
 
 #include <Arduino.h>
-#include <AccelMotor.h>
 #include <ESP32Servo.h>
+#include <Preferences.h>
 #include "gpio.h"
 
-extern AccelMotor motorLeft, motorRight;
+extern Preferences pref;
+#define eeprGS pref.getShort
+
+extern void(* resetFunc) (void); //declare reset function at address 0, trigger watchdog.
 
 #endif /* __MAIN__H__ */

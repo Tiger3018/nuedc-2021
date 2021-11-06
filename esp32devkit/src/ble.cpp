@@ -1,5 +1,5 @@
 #include "ble.h"
-#include "main.h"
+#include "pref.h"
 #include "serial.h"
 #include "rtos_core.h"
 
@@ -26,17 +26,17 @@ BLESerial SerialBL, SerialDE;
 
 void bleSetup()
 {
-    static char bleName[20] = BLE_NAME_MAX_20;
+    static String bleName = BLE_NAME_MAX_20;
     // Create the BLE Device & Server
     if(!pref.isKey("bleName"))
     {
-        pref.putBytes("bleName", BLE_NAME_MAX_20, 20);
+        pref.putString("bleName", BLE_NAME_MAX_20);
     }
     else
     {
-        pref.getBytes("bleName", bleName, 20);
+        pref.getString("bleName", bleName);
     }
-    BLESerial::deviceStart(bleName);
+    BLESerial::deviceStart(bleName.c_str());
     SerialBL.begin(0, SERVICE_CAR_UUID, CHARACTER_CAR_UUID_RX, CHARACTER_CAR_UUID_TX);
     SerialDE.begin(0, SERVICE_DEBUG_UUID, CHARACTER_DEBUG_UUID_RX, CHARACTER_DEBUG_UUID_TX);
     // SerialDE.setTimeout(0); has no effect, see read()
@@ -81,7 +81,7 @@ class BLESerialCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
  
         // Serial.printf("recevie! %s\n", pCharacteristic -> getUUID().toString());
-      bleSerial->receiveBuffer = bleSerial->receiveBuffer + pCharacteristic->getValue();
+        bleSerial->receiveBuffer = bleSerial->receiveBuffer + pCharacteristic->getValue();
     }
 
 };
@@ -120,7 +120,7 @@ bool BLESerial::begin(bool mode, const char* serviceUUID, const char* rxUUID, co
         return false;
     
     BLESerialServerCallbacks* bleSerialServerCallbacks =  new BLESerialServerCallbacks(); 
-    bleSerialServerCallbacks->bleSerial = this;      
+    bleSerialServerCallbacks->bleSerial = this;
     pServer->setCallbacks(bleSerialServerCallbacks);
 
     // Create the BLE Service

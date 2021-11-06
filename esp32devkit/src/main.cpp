@@ -3,8 +3,7 @@
 #include "timer.h"
 #include "motor.h"
 #include "serial.h"
-
-Preferences pref;
+#include "pref.h"
 
 void(* resetFunc) (void) = 0x0; //declare reset function at address 0, trigger watchdog.
 
@@ -31,6 +30,6 @@ void loop() {
 }
 
 void serialEventRun() {
-  openMVProcess();
+  openMVLineProcess();
   return;
 }

@@ -1,4 +1,5 @@
 #include "serial.h"
+#include "pref.h"
 #include "main.h"
 #include "motor.h"
 #include "ble.h"
@@ -14,42 +15,48 @@ void carProcess()
 void debugProcess()
 {
     static int8_t charBuf = 0;
-    static char lineBuf[20] = {0}, tot = 0;
+    static char lineBuf[40] = {0}, tot = 0;
+    static std :: stringstream streamBuf;
     short tempM, tempL, tempR;
-    std :: stringstream streamBuf;
+    double tempP, tempI, tempD;
     while((charBuf = SerialDE.read()) != -1)
     {
         if(charBuf == '\n')
         {
             lineBuf[tot ++] = charBuf;
             tot = 0;
-            Serial.println(lineBuf);
             streamBuf.clear();
             streamBuf << lineBuf;
+            memset(lineBuf, 0, sizeof(lineBuf));
             streamBuf >> lineBuf;
-            Serial.println(lineBuf);
+            Serial.printf("Receive DEBUG BLE terminal command \'%s\'\n", lineBuf);
             if(*lineBuf == 'M')
             {
                 tempL = 100; tempR = 100;
-                if(streamBuf >> tempL >> tempR)
+                if(streamBuf >> tempL)
                 {
                     pref.putShort("speedLeft", tempL);
+                }
+                if(streamBuf >> tempR)
+                {
                     pref.putShort("speedRight", tempR);
                 }
-                // Serial.printf("Motor: %d %d\n", (int32_t)tempL, (int32_t)tempR);
-                SerialDE.printf("Motor: %i %i\n", eeprGS("speedLeft"), eeprGS("speedRight"));
+                SerialDE.printf("Motor: %i %i\n", EEPR_GS("speedLeft"), EEPR_GS("speedRight"));
             }
             else if(*lineBuf == 'S')
             {
-                tempL = 90;
-                if(streamBuf >> tempM)
+                if(*(lineBuf + 1) == 'M')
+                {
+                    if(streamBuf >> tempM)
+                    {
+                        pref.putShort("servoMid", tempM);
+                    }
+                }
+                else if(streamBuf >> tempM)
                 {
                     pref.putShort("servo", tempM);
-                    // pref.putShort("servoMin", tempL);
-                    // pref.putShort("servoMax", tempR);
                 }
-                // Serial.printf("Servo: %d | %d %d\n", (int32_t)tempM, (int32_t)tempL, (int32_t)tempR);
-                SerialDE.printf("Servo: %i | %i %i\n", eeprGS("servo"), eeprGS("servoMin"), eeprGS("servoMax"));
+                SerialDE.printf("Servo: %i at %i |can't change:<%i %i>\n", EEPR_GS("servo"), EEPR_GS("servoMid"), EEPR_GS("servoMin"), EEPR_GS("servoMax"));
             }
             else if(*lineBuf == 'R')
             {
@@ -63,8 +70,25 @@ void debugProcess()
                 }
                 else
                 {
+                    pref.remove("bleName");
                     SerialDE.printf("Your name already reset to default! Reset now.\n");
                 }
+            }
+            else if(*lineBuf == 'P')
+            {
+                if(streamBuf >> tempP)
+                {
+                    pref.putDouble("motorP", tempP);
+                }
+                if(streamBuf >> tempI)
+                {
+                    pref.putDouble("motorI", tempI);
+                }
+                if(streamBuf >> tempD)
+                {
+                    pref.putDouble("motorD", tempD);
+                }
+                SerialDE.printf("Motor: %f %f %f\n", EEPR_GD("motorP"), EEPR_GD("motorI"), EEPR_GD("motorD"));
             }
         }
         else
@@ -99,10 +123,48 @@ void openMVProcess()
     }
 }
 
+void openMVLineProcess()
+{
+    static int8_t charBuf = 0;
+    static char lineBuf[40] = {0}, tot = 0;
+    static std :: stringstream streamBuf;
+    short temp, tempL;
+    while((charBuf = Serial2.read()) != -1)
+    {
+        if(charBuf == '\n')
+        {
+            lineBuf[tot ++] = charBuf;
+            tot = 0;
+            streamBuf.clear();
+            streamBuf << lineBuf;
+            memset(lineBuf, 0, sizeof(lineBuf));
+            if(streamBuf >> temp)
+            {
+                pref.putShort("servo", temp + 
+                    pref.getShort("servoMid", 90)
+                );
+                if(temp != tempL)
+                {
+                    tempL = temp;
+                    // SerialDE.printf("S - %d\n", (int)(temp));
+                }
+            }
+        }
+        else
+        {
+            lineBuf[tot ++] = charBuf;
+            if(tot >= 20) tot = 0;
+        }
+    }
+    return;
+}
+
 void serialSetup()
 {
-    Serial2.begin(19200); // RX2 == 16 TX2 == 17
-    Serial2.setTimeout(10);
+    Serial2.begin(19200); // Defined in hardware: RX2 == 16 TX2 == 17
+    Serial2.setTimeout(100);
+    Serial2.print("R\n"); // Which RESET the openmv.
+    delay(100);
 }
 
 void (*controlFunction[])() = {};

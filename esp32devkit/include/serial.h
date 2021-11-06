@@ -6,6 +6,7 @@
 void debugProcess();
 void carProcess();
 void openMVProcess();
+void openMVLineProcess();
 
 void serialSetup();
 

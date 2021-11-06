@@ -3,11 +3,7 @@
 
 #include <Arduino.h>
 #include <ESP32Servo.h>
-#include <Preferences.h>
 #include "gpio.h"
-
-extern Preferences pref;
-#define eeprGS pref.getShort
 
 extern void(* resetFunc) (void); //declare reset function at address 0, trigger watchdog.
 

@@ -1,6 +1,7 @@
 #include "ble.h"
 #include "main.h"
 #include "serial.h"
+#include "rtos_core.h"
 
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -47,17 +48,25 @@ void bleLoop()
     carProcess();
 }
 
+
 class BLESerialServerCallbacks: public BLEServerCallbacks {
-    friend class BLESerial; 
+    friend class BLESerial;
     BLESerial* bleSerial;
     
     void onConnect(BLEServer* pServer) {
-        // delay(1000);
-        this -> bleSerial -> printf("** Your config **\n%i %i %i\n",
-            pref.getShort("servo", -1), pref.getShort("servoMin", -1), pref.getShort("servoMax", -1));
-        // do anything needed on connection
+        // xTaskCreateUniversal(this -> bleOnConnect, "BLEOnConnect", 1024, this -> bleSerial, 2, &NULLTaskHandle, ARDUINO_RUNNING_CORE);
         // delay(1000); // wait for connection to complete or messages can be lost
     };
+
+    void bleOnConnect(void* bleSerialVoid)
+    {
+        BLESerial* bleSerial = (BLESerial*)bleSerialVoid;
+        vTaskDelay(2000);
+        bleSerial -> printf(
+            "** Your config **\n%i %i %i\n",
+            pref.getShort("servo", -1), pref.getShort("servoMin", -1), pref.getShort("servoMax", -1)
+        );
+    }
 
     void onDisconnect(BLEServer* pServer) {
         pServer->startAdvertising(); // restart advertising

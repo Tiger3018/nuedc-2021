@@ -5,6 +5,9 @@
 
 void debugProcess();
 void carProcess();
+void openMVProcess();
+
+void serialSetup();
 
 extern BLESerial SerialBL, SerialDE;
 

@@ -21,6 +21,19 @@ bool motorSetup()
     ESP32PWM::allocateTimer(1);
     // ESP32PWM::allocateTimer(2);
     // ESP32PWM::allocateTimer(3);
+    // pref.putShort("servoMin", 1000); pref.putShort("servoMax", 2500);
+    if(_ = !servoPutter.attach(SERVO_PIN, 1000, 2500))
+    {
+        log_e("Fail to allocate timer for servo.");
+    }
+    else
+    {
+        log_i("servoPutter is attached to %lld", _);
+    }
+    servoPutter.setPeriodHertz(300);
+    servoPutter.detach();
+    servoPutter.attach(SERVO_PIN, 1000, 2500);
+    // servoPutter.write(90);
 
     pinMode(MOTOR_LIN1_PIN, INPUT);
     pinMode(MOTOR_LIN2_PIN, INPUT);
@@ -39,27 +52,14 @@ bool motorSetup()
     motorLeft.setMode(AUTO);
     motorRight.setMode(AUTO);
 
-    servoPutter.setPeriodHertz(300);
-    if(_ = !servoPutter.attach(SERVO_PIN, 1000, 2500))
-    {
-        log_e("Fail to allocate timer for servo.");
-    }
-    else
-    {
-        log_i("servoPutter is attached to %lld", _);
-    }
-    servoPutter.write(90);
     return true;
 }
 
 void motorLoop()
 {
     motorLeft.setSpeed(pref.getShort("speedLeft", 100));
-    // motorLeft.tick();
     motorRight.setSpeed(pref.getShort("speedRight", 100));
-    // servoPutter.detach();
-    // delay(100);
-    // servoPutter.attach(SERVO_PIN, pref.getShort("servoMin", 1000), pref.getShort("servoMax", 2500));
-    // delay(100);
+    servoPutter.detach();
+    servoPutter.attach(SERVO_PIN, 1000, 2500);
     servoPutter.write(pref.getShort("servo", 90));
 }

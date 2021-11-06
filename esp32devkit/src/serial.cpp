@@ -36,8 +36,8 @@ void debugProcess()
                     pref.putShort("speedLeft", tempL);
                     pref.putShort("speedRight", tempR);
                 }
-                Serial.printf("Motor: %d %d\n", (int32_t)tempL, (int32_t)tempR);
-                SerialDE.printf("Motor: %d %d\n", (int32_t)tempL, (int32_t)tempR);
+                // Serial.printf("Motor: %d %d\n", (int32_t)tempL, (int32_t)tempR);
+                SerialDE.printf("Motor: %i %i\n", eeprGS("speedLeft"), eeprGS("speedRight"));
             }
             else if(*lineBuf == 'S')
             {
@@ -48,7 +48,7 @@ void debugProcess()
                     // pref.putShort("servoMin", tempL);
                     // pref.putShort("servoMax", tempR);
                 }
-                Serial.printf("Servo: %d | %d %d\n", (int32_t)tempM, (int32_t)tempL, (int32_t)tempR);
+                // Serial.printf("Servo: %d | %d %d\n", (int32_t)tempM, (int32_t)tempL, (int32_t)tempR);
                 SerialDE.printf("Servo: %i | %i %i\n", eeprGS("servo"), eeprGS("servoMin"), eeprGS("servoMax"));
             }
             else if(*lineBuf == 'R')
@@ -76,9 +76,33 @@ void debugProcess()
     return;
 }
 
+void openMVProcess()
+{
+    static uint8_t lineBuf[20] = {0};
+    Serial2.readBytes(lineBuf, 1);
+    Serial2.flush();
+    switch(*lineBuf)
+    {
+    case '0':
+        servoPutter.write(90);
+        break;
+    case '1':
+        servoPutter.write(0);
+        SerialDE.printf("Recive MV data 1!\n");
+        break;
+    case '2':
+        servoPutter.write(180);
+        SerialDE.printf("Recive MV data 2!\n");
+        break;
+    default:
+        break;
+    }
+}
+
 void serialSetup()
 {
-    Serial2.begin(9600); // RX2 == 16 TX2 == 17
+    Serial2.begin(19200); // RX2 == 16 TX2 == 17
+    Serial2.setTimeout(10);
 }
 
 void (*controlFunction[])() = {};

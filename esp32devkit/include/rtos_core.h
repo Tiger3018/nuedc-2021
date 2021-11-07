@@ -4,6 +4,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-extern TaskHandle_t NULLTaskHandle;
+extern TaskHandle_t NULLTaskHandle, BLETaskHandle;
 
 #endif /* __RTOS_CORE_H__ */

@@ -24,4 +24,11 @@
 #define SERIAL_MV_RX_PIN 25
 #define SERIAL_MV_TX_PIN 27
 
+#define PNP1_PIN 15
+#define PNP2_PIN 2
+#define PNP3_PIN 4
+#define PNP4_PIN 5
+
+#define THING_PIN 5
+
 #endif /* __GPIO_H__ */

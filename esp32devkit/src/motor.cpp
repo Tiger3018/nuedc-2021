@@ -2,6 +2,8 @@
 #include "pref.h"
 #include "gpio.h"
 #include "timer.h"
+#include "serial.h"
+#include "task/task_default.h"
 #include <AccelMotor.h>
 #include <ESP32Servo.h>
 
@@ -63,14 +65,81 @@ bool motorSetup()
 
 void motorLoop()
 {
-    // motorLeft.setSpeed(pref.getShort("speedLeft", 100));
-    // motorRight.setSpeed(pref.getShort("speedRight", 100));
-    servoPutter.write(pref.getShort("servo", 90));
-    motorLeft.setTargetSpeed(pref.getShort("speedLeft", 100));
-    motorRight.setTargetSpeed(pref.getShort("speedRight", 100));
-    motorLeft.kp = motorRight.kp = pref.getDouble("motorP", 0.06);
-    motorLeft.ki = motorRight.ki = pref.getDouble("motorI", 0.055);
-    motorLeft.kd = motorRight.kd = pref.getDouble("motorD", 0.01);
+    // motorLeft.setSpeed(pref.getShort("motorLeft", 100));
+    // motorRight.setSpeed(pref.getShort("motorRight", 100));
+    static modeEnum lastMode;
+    if(taskDefaultMode() != lastMode)
+    {
+        lastMode = taskDefaultMode();
+        switch (lastMode)
+        {
+        case M_IDLE:
+            motorLeft.setRunMode(IDLE_RUN);
+            motorRight.setRunMode(IDLE_RUN);
+            break;
+
+        case M_IDLE_STOP:
+            motorLeft.setRunMode(IDLE_RUN);
+            motorLeft.setMode(STOP);
+            motorRight.setRunMode(IDLE_RUN);
+            motorRight.setMode(STOP);
+            break;
+
+        case M_PID_SPEED:
+        case M_PID_LINE:
+        case M_BLE_SERIAL:
+            motorLeft.setRunMode(PID_SPEED);
+            motorRight.setRunMode(PID_SPEED);
+            break;
+        
+        case M_TURN:
+            motorLeft.setRunMode(PID_POS);
+            motorRight.setRunMode(PID_POS);
+            servoPutter.write(taskDefaultStackTop() ? 0 : 180);
+            motorLeft.setTarget(motorLeft.getCurrent() + (taskDefaultStackTop() ? 200 : 1300));
+            motorRight.setTarget(motorRight.getCurrent() - (taskDefaultStackTop() ? 1300 : 200));
+            break;
+        
+        default:
+            break;
+        }
+    }
+    switch (taskDefaultMode())
+    {
+    case M_PID_LINE:
+        servoPutter.write(pref.getShort("servoMid", 90) + commandServoDiff);
+        motorLeft.setTargetSpeed(pref.getShort("motorLeft", 800));
+        motorRight.setTargetSpeed(- pref.getShort("motorRight", 800));
+        break;
+    
+    case M_TURN:
+        break;
+
+    case M_BLE_SERIAL:
+        servoPutter.write(pref.getShort("servo", 90));
+        motorLeft.setTargetSpeed(pref.getShort("motorLeft", 800));
+        motorRight.setTargetSpeed(- pref.getShort("motorRight", 800));
+        break;
+    
+    case M_AROUND:
+        break;
+
+    default:
+        servoPutter.write(pref.getShort("servo", 90));
+        break;
+    }
+    if(taskDefaultMode() != M_TURN)
+    {
+        motorLeft.kp = motorRight.kp = pref.getDouble("motorP", 0.09);
+        motorLeft.ki = motorRight.ki = pref.getDouble("motorI", 0.300);
+        motorLeft.kd = motorRight.kd = pref.getDouble("motorD", 0.001);
+    }
+    else
+    {
+        motorLeft.kp = motorRight.kp = 0;
+        motorLeft.ki = motorRight.ki = 15;
+        motorLeft.kd = motorRight.kd = 0.4;
+    }
     motorLeft.tick(encCounter[0]);
     motorRight.tick(encCounter[1]);
     // servoPutter.detach();

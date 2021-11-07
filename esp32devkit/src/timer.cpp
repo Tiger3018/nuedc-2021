@@ -11,20 +11,23 @@ using std :: bitset;
 volatile long encCounter[2] = {0};
 volatile char pin = 0;
 
-static unsigned long regTimer;
+unsigned long regTimer[10] = {0};
+Timer<10> libTimer;
+uintptr_t libTimerTurn, libTimerStartUp;
 
 void timerSetup()
 {
-    regTimer = millis();
+    regTimer[0] = millis();
 }
 
 void timerLoop()
 {
-    if(millis() - regTimer > 1000)
+    libTimer.tick();
+    if(millis() - regTimer[0] > 1000)
     {
-        regTimer = millis();
-        Serial.printf("Counter: %ld %ld\n", encCounter[0], encCounter[1]);
-        Serial.printf("Speed: %d %ld\n", motorLeft.getSpeed(), motorRight.getSpeed());
+        regTimer[0] = millis();
+        // Serial.printf("Counter: %ld %ld\n", encCounter[0], encCounter[1]);
+        // Serial.printf("Speed: %d %ld\n", motorLeft.getSpeed(), motorRight.getSpeed());
     }
 }
 

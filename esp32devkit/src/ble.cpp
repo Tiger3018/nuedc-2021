@@ -34,10 +34,10 @@ void bleSetup()
     }
     else
     {
-        pref.getString("bleName", bleName);
+        bleName = pref.getString("bleName");
     }
     BLESerial::deviceStart(bleName.c_str());
-    SerialBL.begin(0, SERVICE_CAR_UUID, CHARACTER_CAR_UUID_RX, CHARACTER_CAR_UUID_TX);
+    SerialBL.begin(pref.getBool("bleMode", 0), SERVICE_CAR_UUID, CHARACTER_CAR_UUID_RX, CHARACTER_CAR_UUID_TX);
     SerialDE.begin(0, SERVICE_DEBUG_UUID, CHARACTER_DEBUG_UUID_RX, CHARACTER_DEBUG_UUID_TX);
     // SerialDE.setTimeout(0); has no effect, see read()
 }
@@ -48,25 +48,28 @@ void bleLoop()
     carProcess();
 }
 
+void bleOnConnect(void* bleSerialVoid)
+{
+    BLESerial* bleSerial = (BLESerial*)bleSerialVoid;
+    vTaskDelay(2000);
+    Serial.printf("%lld\n", (long long)bleSerial);
+    // bleSerial -> printf(
+    //     "** Your config **\n%i %i %i\n",
+    //     pref.getShort("servo", -1), pref.getShort("servoMin", -1), pref.getShort("servoMax", -1)
+    // );
+    vTaskDelete(BLETaskHandle);
+}
+
 
 class BLESerialServerCallbacks: public BLEServerCallbacks {
     friend class BLESerial;
     BLESerial* bleSerial;
     
     void onConnect(BLEServer* pServer) {
-        // xTaskCreateUniversal(this -> bleOnConnect, "BLEOnConnect", 1024, this -> bleSerial, 2, &NULLTaskHandle, ARDUINO_RUNNING_CORE);
+        Serial.printf("%lld\n", (long long)this->bleSerial);
+        // xTaskCreateUniversal(bleOnConnect, "BLEOnConnect", 1024, this -> bleSerial, 2, &NULLTaskHandle, ARDUINO_RUNNING_CORE);
         // delay(1000); // wait for connection to complete or messages can be lost
     };
-
-    void bleOnConnect(void* bleSerialVoid)
-    {
-        BLESerial* bleSerial = (BLESerial*)bleSerialVoid;
-        vTaskDelay(2000);
-        bleSerial -> printf(
-            "** Your config **\n%i %i %i\n",
-            pref.getShort("servo", -1), pref.getShort("servoMin", -1), pref.getShort("servoMax", -1)
-        );
-    }
 
     void onDisconnect(BLEServer* pServer) {
         pServer->startAdvertising(); // restart advertising
